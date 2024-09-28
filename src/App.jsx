@@ -101,16 +101,18 @@ export default function App() {
     const leftPosition = screenLeft + (Object.keys(runningSimulations).length % 3) * (windowWidth + 10)
     const topPosition = screenTop + Math.floor(Object.keys(runningSimulations).length / 3) * (windowHeight + 30)
 
-    const basePath = import.meta.env.DEV ? '' : import.meta.env.BASE_URL;
-    const workerUrl = `${basePath}worker.html?${queryParams.toString()}`;
+    // Use window.location.origin to get the base URL dynamically
+    const baseUrl = `${window.location.origin}${import.meta.env.BASE_URL}`;
+    const workerUrl = new URL('worker.html', baseUrl);
+    workerUrl.search = queryParams.toString();
 
-    const workerWindowFeatures = `width=${windowWidth},height=${windowHeight},left=${leftPosition},top=${topPosition}`
+    const workerWindowFeatures = `width=${windowWidth},height=${windowHeight},left=${leftPosition},top=${topPosition}`;
 
     const workerWindow = window.open(
-      `${workerUrl}?${queryParams.toString()}`,
+      workerUrl.toString(),
       '_blank',
       workerWindowFeatures,
-    )
+    );
 
     if (workerWindow) {
       workerWindow.name = workerId
