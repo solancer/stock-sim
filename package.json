@@ -1,13 +1,16 @@
 {
-  "name": "StockSim",
+  "name": "stock-sim",
   "version": "0.1.0",
   "type": "module",
   "author": "Srinivas Gowda <srinivas@solancer.com>",
+  "homepage": "https://solancer.github.io/stock-sim",
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@heroicons/react": "^1.0.6",
