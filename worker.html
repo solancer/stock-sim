@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Stock Simulator Worker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .custom-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .progress-bar {
+            transition: width 0.5s ease-in-out;
+        }
+    </style>
+</head>
+
+<body class="bg-white text-black min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-2xl">
+    <h2 id="worker-title" class="text-3xl font-bold mb-6 text-center">AAPL Simulation</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div>
+        <p id="status" class="text-gray-600 mb-2">Simulating...</p>
+        <p id="stock-symbol" class="text-black font-semibold text-lg">Stock: AAPL</p>
+        <div id="price-info" class="bg-gray-50 rounded-lg p-4 mt-4">
+          <p id="current-price" class="text-3xl font-bold mb-2">$150.25</p>
+          <div class="flex justify-between text-sm">
+            <p id="high-price" class="text-green-600">High: $152.50</p>
+            <p id="low-price" class="text-red-600">Low: $148.75</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div id="chart" class="w-full h-40"></div>
+      </div>
+    </div>
+    <div class="mb-6">
+      <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+        <div id="progress" class="bg-black h-2 rounded-full transition-all duration-500 ease-in-out"
+          style="width: 75%;"></div>
+      </div>
+      <p id="estimated-time" class="text-gray-600 text-sm text-center">Estimated Time Remaining: 2m 30s</p>
+    </div>
+    <button id="stop-button"
+      class="w-full px-4 py-3 bg-black text-white rounded-lg hover:bg-gray-800 focus:outline-none transition duration-300 ease-in-out flex items-center justify-center text-lg font-semibold">
+      Stop Simulation
+    </button>
+  </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        (function () {
+          const urlParams = new URLSearchParams(window.location.search);
+          const stockSymbolFromUrl = urlParams.get("stock") || "AAPL";
+          const stockSymbol = urlParams.get("stock") || "AAPL";
+          const initialPrice = urlParams.get("initialPrice");
+          const expectedReturn = urlParams.get("expectedReturn");
+          const volatility = urlParams.get("volatility");
+
+          console.log(
+            "Worker window initialized with stockSymbol:",
+            stockSymbolFromUrl
+          );
+
+          const workerTitleElement = document.getElementById("worker-title");
+          if (workerTitleElement) {
+            workerTitleElement.textContent = `Worker - ${stockSymbol}`;
+          } else {
+            console.error("Worker title element not found");
+          }
+
+          const mainWindow = window.opener || window.parent;
+
+          if (!mainWindow) {
+            document.getElementById("status").textContent =
+              "Unable to communicate with the main window.";
+            return;
+          }
+
+          const worker = new Worker("worker.js");
+
+          worker.onerror = function (e) {
+            console.error("Worker error:", e);
+          };
+
+          worker.onmessage = (event) => {
+            const { data } = event;
+            console.log("Worker window received message:", data);
+            if (data.type === "STATUS") {
+              document.getElementById("status").textContent = data.payload;
+            } else if (data.type === "STOCK_UPDATE") {
+              mainWindow.postMessage(
+                {
+                  type: "STOCK_UPDATE",
+                  payload: { stockSymbol, stockUpdate: data.payload },
+                },
+                mainWindow.location.origin
+              );
+              updateChart(data.payload);
+            } else if (data.type === "HIGH_LOW_UPDATE") {
+              updatePriceInfo(data.payload);
+            } else if (data.type === "PROGRESS_UPDATE") {
+              updateProgress(data.payload);
+            } else if (data.type === "SIMULATION_ENDED") {
+              // Notify the main app
+              mainWindow.postMessage(
+                {
+                  type: "SIMULATION_ENDED",
+                  payload: { stockSymbol },
+                },
+                mainWindow.location.origin
+              );
+            }
+          };
+
+          // Start the simulation
+          worker.postMessage({
+            type: "START_SIMULATION",
+            payload: {
+              stockSymbol: stockSymbolFromUrl,
+              initialPrice: urlParams.get("initialPrice"),
+              expectedReturn: urlParams.get("expectedReturn"),
+              volatility: urlParams.get("volatility"),
+            },
+          });
+
+          // Progress bar update function
+          function updateProgress({ progress, estimatedTimeRemaining }) {
+            const progressBar = document.getElementById("progress");
+            progressBar.style.width = `${progress}%`;
+
+            const estimatedTimeElement =
+              document.getElementById("estimated-time");
+            estimatedTimeElement.textContent = `Estimated Time Remaining: ${estimatedTimeRemaining}`;
+          }
+
+          // Display the stock symbol
+          document.getElementById(
+            "stock-symbol"
+          ).textContent = `Simulating Stock: ${stockSymbol}`;
+
+          // Update price information
+          function updatePriceInfo({ highPrice, lowPrice, currentPrice }) {
+            document.getElementById(
+              "current-price"
+            ).textContent = `Current Price: $${currentPrice.toFixed(2)}`;
+            document.getElementById(
+              "high-price"
+            ).textContent = `High: $${parseFloat(highPrice).toFixed(2)}`;
+            document.getElementById(
+              "low-price"
+            ).textContent = `Low: $${parseFloat(lowPrice).toFixed(2)}`;
+          }
+
+          // D3 Chart
+          const margin = { top: 20, right: 20, bottom: 50, left: 70 };
+          const width = 300 - margin.left - margin.right;
+          const height = 160 - margin.top - margin.bottom;
+
+          const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+          const x = d3.scaleTime().range([0, width]);
+          const y = d3.scaleLinear().range([height, 0]);
+
+          const line = d3.line()
+            .x(d => x(new Date(d.time)))
+            .y(d => y(d.price));
+
+          const data = [];
+
+          x.domain(d3.extent(data, d => new Date(d.time)));
+          y.domain([d3.min(data, d => d.price) * 0.99, d3.max(data, d => d.price) * 1.01]);
+
+          svg.append("path")
+            .datum(data)
+            .attr("fill", "none")
+            .attr("stroke", "black")
+            .attr("stroke-width", 2)
+            .attr("d", line);
+
+          // Axes
+          svg.append("g")
+            .attr("class", "x-axis")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x).ticks(5));
+
+          svg.append("g")
+            .attr("class", "y-axis")
+            .call(d3.axisLeft(y).ticks(5));
+
+          // X-axis label
+          svg.append("text")
+            .attr("class", "x-axis-label")
+            .attr("text-anchor", "end")
+            .attr("x", width / 2)
+            .attr("y", height + margin.bottom - 10)
+            .text("Time");
+
+          // Y-axis label
+          svg.append("text")
+            .attr("class", "y-axis-label")
+            .attr("text-anchor", "end")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -height / 2)
+            .attr("y", -margin.left + 20)
+            .text("Price");
+
+          // Update chart with new data
+          function updateChart(stockUpdate) {
+            data.push(stockUpdate);
+            if (data.length > 20) data.shift();
+
+            x.domain(d3.extent(data, d => new Date(d.time)));
+            y.domain([d3.min(data, d => d.price) * 0.99, d3.max(data, d => d.price) * 1.01]);
+
+            svg.select("path")
+              .datum(data)
+              .attr("d", line);
+
+            svg.select(".x-axis")
+              .call(d3.axisBottom(x).ticks(5));
+
+            svg.select(".y-axis")
+              .call(d3.axisLeft(y).ticks(5));
+          }
+
+          // Stop button functionality
+          document
+            .getElementById("stop-button")
+            .addEventListener("click", () => {
+              worker.postMessage({ type: "STOP_SIMULATION" });
+              document.getElementById("status").textContent =
+                "Simulation stopped by user.";
+            });
+        })();
+      });
+    </script>
+  </body>
+</html>
