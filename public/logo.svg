@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="90" fill="#24292e" />
+
+  <!-- Stock trend line -->
+  <polyline points="40,140 70,90 110,120 150,60" fill="none" stroke="#28a745" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Stock trend circles -->
+  <circle cx="40" cy="140" r="8" fill="#28a745" />
+  <circle cx="70" cy="90" r="8" fill="#28a745" />
+  <circle cx="110" cy="120" r="8" fill="#28a745" />
+  <circle cx="150" cy="60" r="8" fill="#28a745" />
+
+  <!-- Circuit elements around the circle -->
+  <rect x="90" y="10" width="20" height="20" fill="#ffffff" rx="5" />
+  <rect x="10" y="90" width="20" height="20" fill="#ffffff" rx="5" />
+  <rect x="170" y="90" width="20" height="20" fill="#ffffff" rx="5" />
+  <rect x="90" y="170" width="20" height="20" fill="#ffffff" rx="5" />
+
+  <!-- Circuit lines -->
+  <line x1="100" y1="30" x2="100" y2="60" stroke="#ffffff" stroke-width="3" />
+  <line x1="30" y1="100" x2="60" y2="100" stroke="#ffffff" stroke-width="3" />
+  <line x1="140" y1="100" x2="170" y2="100" stroke="#ffffff" stroke-width="3" />
+  <line x1="100" y1="140" x2="100" y2="170" stroke="#ffffff" stroke-width="3" />
+</svg>
