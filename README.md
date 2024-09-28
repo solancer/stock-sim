@@ -11,7 +11,7 @@
 
 StockSim a real-time stock market simulation platform that leverages Web Workers and multi-window communication to deliver a high-performance, responsive user experience. This project demonstrates cutting-edge web technologies to handle complex computations and real-time data visualization without compromising on UI responsiveness.
 
-Key Features
+## Key Features
 
 🚀 Utilizes Web Workers for background processing of intensive computations
 🖥️ Implements multi-window architecture for improved isolation and scalability
