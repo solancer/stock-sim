@@ -101,10 +101,13 @@ export default function App() {
     const leftPosition = screenLeft + (Object.keys(runningSimulations).length % 3) * (windowWidth + 10)
     const topPosition = screenTop + Math.floor(Object.keys(runningSimulations).length / 3) * (windowHeight + 30)
 
+    const basePath = import.meta.env.DEV ? '' : import.meta.env.BASE_URL;
+    const workerUrl = `${basePath}worker.html?${queryParams.toString()}`;
+
     const workerWindowFeatures = `width=${windowWidth},height=${windowHeight},left=${leftPosition},top=${topPosition}`
 
     const workerWindow = window.open(
-      `/worker.html?${queryParams.toString()}`,
+      `${workerUrl}?${queryParams.toString()}`,
       '_blank',
       workerWindowFeatures,
     )
